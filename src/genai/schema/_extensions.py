@@ -13,4 +13,7 @@ class AIMessage(BaseMessage):
     role: ChatRole = ChatRole.ASSISTANT
 
 
-__all__ = ["HumanMessage", "SystemMessage", "AIMessage"]
+class ToolMessage(BaseMessage):
+    role: ChatRole = ChatRole.USER
+
+__all__ = ["HumanMessage", "SystemMessage", "AIMessage", "ToolMessage"]

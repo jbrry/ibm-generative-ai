@@ -4,27 +4,24 @@ import logging
 from pathlib import Path
 from typing import Any, Iterator, Optional, Union
 
-from pydantic import ConfigDict
-from pydantic.v1 import validator
-
 from genai import Client
 from genai._types import EnumLike
 from genai._utils.general import to_model_optional
 from genai.extensions._common.utils import (
-    _prepare_chat_generation_request,
-    create_generation_info_from_response,
-)
-from genai.schema import (
-    AIMessage,
-    BaseMessage,
-    HumanMessage,
-    ModerationParameters,
-    SystemMessage,
-    TextGenerationParameters,
-    TrimMethod,
-)
+    _prepare_chat_generation_request, create_generation_info_from_response)
+from genai.schema import (AIMessage, BaseMessage, HumanMessage,
+                          ModerationParameters, SystemMessage,
+                          TextGenerationParameters, ToolMessage, TrimMethod)
+from pydantic import ConfigDict
+from pydantic.v1 import validator
 
 try:
+    from genai.extensions.langchain.utils import (CustomAIMessageChunk,
+                                                  CustomChatGenerationChunk,
+                                                  create_llm_output,
+                                                  dump_optional_model,
+                                                  load_config,
+                                                  update_token_usage_stream)
     from langchain_core.callbacks.manager import CallbackManagerForLLMRun
     from langchain_core.language_models.chat_models import BaseChatModel
     from langchain_core.messages import AIMessage as LCAIMessage
@@ -32,17 +29,9 @@ try:
     from langchain_core.messages import ChatMessage as LCChatMessage
     from langchain_core.messages import HumanMessage as LCHumanMessage
     from langchain_core.messages import SystemMessage as LCSystemMessage
+    from langchain_core.messages import ToolMessage as LCToolMessage
     from langchain_core.messages import get_buffer_string
     from langchain_core.outputs import ChatGeneration, ChatResult
-
-    from genai.extensions.langchain.utils import (
-        CustomAIMessageChunk,
-        CustomChatGenerationChunk,
-        create_llm_output,
-        dump_optional_model,
-        load_config,
-        update_token_usage_stream,
-    )
 except ImportError:
     raise ImportError("Could not import langchain: Please install ibm-generative-ai[langchain] extension.")  # noqa: B904
 
@@ -71,6 +60,8 @@ def _convert_message_to_genai(message: Message) -> BaseMessage:
         return AIMessage(content=convert_message_content(message.content))
     elif isinstance(message, LCSystemMessage):
         return SystemMessage(content=convert_message_content(message.content))
+    elif isinstance(message, LCToolMessage):
+        return ToolMessage(content=convert_message_content(message.content))
     else:
         raise ValueError(f"Got unknown message type '{message}'")
 
